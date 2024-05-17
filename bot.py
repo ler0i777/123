@@ -1,81 +1,32 @@
-import json
 import logging
-
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from aiogram import Bot, Dispatcher, executor, types
 
 # Включаем логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
-# Путь к файлу, где будем хранить подписчиков
-SUBSCRIBERS_FILE = 'subscribers.json'
+# Токен вашего бота
+API_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN'
 
+# URL-адрес страницы, которую будет отправлять бот
+PAGE_URL = 'https://example.com/page'
 
-def load_subscribers():
-    """Загружает подписчиков из файла."""
-    try:
-        with open(SUBSCRIBERS_FILE, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
+# Инициализация бота и диспетчера
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
 
+# Обработчик команды /start
+@dp.message_handler(commands=['start'])
+async def start(message: types.Message):
+    await message.reply("Привет! Используйте команду /subscribe, чтобы подписаться и получить ссылку на страницу.")
 
-def save_subscribers(subscribers):
-    """Сохраняет подписчиков в файл."""
-    with open(SUBSCRIBERS_FILE, 'w') as file:
-        json.dump(subscribers, file)
+# Обработчик команды /subscribe
+@dp.message_handler(commands=['subscribe'])
+async def subscribe(message: types.Message):
+    await message.reply(f"Спасибо за подписку! Вот ваша ссылка на страницу: {PAGE_URL}")
 
+def main():
+    # Запускаем бота
+    executor.start_polling(dp, skip_updates=True)
 
-def start(update: Update, context: CallbackContext) -> None:
-    """Отправляет сообщение при команде /start."""
-    update.message.reply_text('Привет! Используйте команду /subscribe, чтобы подписаться на рассылку.')
-
-
-def subscribe(update: Update, context: CallbackContext) -> None:
-    """Подписывает пользователя на рассылку."""
-    user_id = update.message.chat_id
-    subscribers = load_subscribers()
-
-    if user_id not in subscribers:
-        subscribers.append(user_id)
-        save_subscribers(subscribers)
-        update.message.reply_text('Вы успешно подписаны на рассылку!')
-    else:
-        update.message.reply_text('Вы уже подписаны на рассылку.')
-
-
-def unsubscribe(update: Update, context: CallbackContext) -> None:
-    """Отписывает пользователя от рассылки."""
-    user_id = update.message.chat_id
-    subscribers = load_subscribers()
-
-    if user_id in subscribers:
-        subscribers.remove(user_id)
-        save_subscribers(subscribers)
-        update.message.reply_text('Вы успешно отписаны от рассылки.')
-    else:
-        update.message.reply_text('Вы не были подписаны на рассылку.')
-
-
-def send_data(context: CallbackContext) -> None:
-    """Отправляет данные всем подписчикам."""
-    subscribers = load_subscribers()
-    for user_id in subscribers:
-        context.bot.send_message(chat_id=user_id, text='Вот ваши данные!')
-
-
-def main() -> None:
-    """Запускает бота."""
-    # Вставьте сюда токен вашего бота
-    token = '7018519797:AAGp13nvCE_6Vcxyer98LVtEgsy-efZ623M'
-    updater = Updater(token)
-
-    dispatcher = updater.dispatcher
-
-    # Регистрируем обработчики команд
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("subscribe", subscribe))
-    dispatcher.add_handler(CommandHandler("unsubscribe", unsubscribe))
+if __name__ == '__main__':
+    main()
